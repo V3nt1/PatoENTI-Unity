@@ -54,7 +54,7 @@ public class Network_Manager : MonoBehaviour
         }
     }
 
-    public void ConnectToServer(string nick, string password)
+    public void TryLogin(string nick, string password)
     {
         try
         {   
@@ -70,7 +70,7 @@ public class Network_Manager : MonoBehaviour
             reader = new StreamReader(stream);
             
             //Envio 0 con nick y ususario separados por / ya que son los valores que he definido en el servidor
-            writer.WriteLine("0" + "/" + nick + "/" + password);
+            writer.WriteLine($"Login/{nick}/{password}");
             
             //Limpio el writer de datos
             writer.Flush();
@@ -84,12 +84,37 @@ public class Network_Manager : MonoBehaviour
 
     private void ManageData(string data)
     {
+        string[] parameters = data.Split('/');
         //Si recibo ping devuelvo 1 como respuesta al servidor
-        if (data == "ping")
+        if (data == "Ping")
         {
             Debug.Log("Recibo ping");
-            writer.WriteLine("1");
+            writer.WriteLine("Ping");
             writer.Flush();
+        }
+        else if (parameters[0].Equals("LoginRespuesta"))
+        {
+            Debug.Log(parameters[1]);
+            if (parameters[1].Equals("True"))
+            {
+                //Aceptar el login
+            }
+            else
+            {
+                Debug.LogError("Logeate bien, tonto");
+            }
+        }
+        else if (parameters[0].Equals("RegisterRespuesta"))
+        {
+            //En este caso, si devuelve True es que el usuario ya existe por lo que no se puede registrar.
+            if (parameters[1].Equals("True"))
+            {
+                Debug.LogError("Te has registrado mal, tonto");
+            }
+            else
+            {
+                //Aceptar registro
+            }
         }
     }
 }
