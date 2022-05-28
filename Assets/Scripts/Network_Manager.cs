@@ -19,6 +19,7 @@ public class Network_Manager : MonoBehaviour
     const string host = "192.168.0.10";
     const int port = 6543;
 
+    [SerializeField] Register_Screen register;
     private void Awake()
     {
         //Si ya existe una instancia del manager y es diferente de la instancia creada en este script destruyo por duplicado
@@ -33,7 +34,6 @@ public class Network_Manager : MonoBehaviour
             DontDestroyOnLoad(this);
         }
     }
-
     private void Update()
     {
         //Si estoy conectado reviso si existen datos
@@ -82,6 +82,30 @@ public class Network_Manager : MonoBehaviour
         }
     }
 
+    public void TryRegister(string nick, string password, string selectClass)
+    {
+        try
+        {
+            socket = new TcpClient(host, port);
+            stream = socket.GetStream();
+
+            connected = true;
+
+            writer = new StreamWriter(stream);
+            reader = new StreamReader(stream);
+
+            writer.WriteLine($"Register/{nick}/{password}/{selectClass}");
+
+            writer.Flush();
+        }
+        catch(Exception e)
+        {
+
+            Debug.Log(e.ToString());
+        }
+
+    }
+
     private void ManageData(string data)
     {
         string[] parameters = data.Split('/');
@@ -113,8 +137,73 @@ public class Network_Manager : MonoBehaviour
             }
             else
             {
-                //Aceptar registro
+                Debug.Log("Te has registrado bien, tonto");
             }
+        }
+        else if (parameters[0].Equals("Classes")){
+
+            string allClasses = data.Replace("Classes/", string.Empty);
+            List<Character> classes = new List<Character>();
+
+            try
+            {
+                string[] stringClasses = allClasses.Split('|');
+
+                for (int i = 0; i< stringClasses.Length; i++)
+                {
+                    if (i % 2 == 0 && i != stringClasses.Length-1)
+                    {
+                        Character newChar = new Character();
+
+                        string[] classStats = stringClasses[i + 1].Split('/');
+
+                        System.Enum.TryParse(stringClasses[i].ToString(), out newChar.m_Class);
+                        
+                        int.TryParse(classStats[0], out newChar.health);
+                        int.TryParse(classStats[1], out newChar.damage);
+                        int.TryParse(classStats[2], out newChar.speed);
+                        int.TryParse(classStats[3], out newChar.jump);
+                        int.TryParse(classStats[4], out newChar.cadency);
+
+                        classes.Add(newChar);
+                    }
+                }
+
+                ClassesManager.classes = classes;
+                register.LoadAllOptions();
+            }
+            catch (Exception e)
+            {
+                Debug.Log(e.ToString());
+            }
+        }
+    }
+
+    public void LoadAllClasses()
+    {
+        try
+        {
+            //Instancia la clase para gestionar la conexion y el streaming de datos
+            socket = new TcpClient(host, port);
+            stream = socket.GetStream();
+
+            //Si hay streaming de datos hay conexion
+            connected = true;
+
+            //Instancio clases de lectura y escritura
+            writer = new StreamWriter(stream);
+            reader = new StreamReader(stream);
+
+            //Envio 0 con nick y ususario separados por / ya que son los valores que he definido en el servidor
+            writer.WriteLine("GetClasses");
+
+            //Limpio el writer de datos
+            writer.Flush();
+
+        }
+        catch (Exception e)
+        {
+            Debug.Log(e.ToString());
         }
     }
 }
