@@ -25,10 +25,15 @@ public class Bullet : MonoBehaviour
     }
 
     //Detectamos las colisiones
-    private void OnTriggerEnter2D(Collider2D collision)
+    private void OnCollisionEnter2D(Collision2D collision)
     {
         //Aplico el daño al jugador (para este ejemplo de codigo lo destruyo directamente)
-        collision.gameObject.GetComponent<CharacterControl>().Damage();
+        collision.gameObject.TryGetComponent(out CharacterControl c);
+
+        if (c)
+        {
+            c.Damage();
+        }
 
         //Uso RPC para llamar la funcion de todos los clientes conectados en la SALA 
         pv.RPC("NetworkDestroy", RpcTarget.All);

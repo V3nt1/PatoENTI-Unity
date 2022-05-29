@@ -2,6 +2,7 @@ using Photon.Pun;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using TMPro;
 
 public class CharacterControl : MonoBehaviour, IPunObservable
 {
@@ -22,6 +23,10 @@ public class CharacterControl : MonoBehaviour, IPunObservable
     private PhotonView pv;
     private Vector3 enemyPosition = Vector3.zero;
 
+    private TextMeshProUGUI playerName;
+
+    bool isGrounded;
+
 
     //Obtengo referencia al rigidbody y al photon view
     private void Awake()
@@ -36,6 +41,8 @@ public class CharacterControl : MonoBehaviour, IPunObservable
 
     private void Start()
     {
+        isGrounded = true;
+        playerName = transform.GetChild(0).GetChild(0).GetComponent<TextMeshProUGUI>();
         Character stats = ClassesManager.instance.classes[(int)playerClass];
 
         hp = stats.health;
@@ -49,6 +56,18 @@ public class CharacterControl : MonoBehaviour, IPunObservable
         Debug.Log(speed);   
         Debug.Log(jumpForce);
         Debug.Log(cadency);
+
+        CharacterControl[] players = FindObjectsOfType<CharacterControl>();
+
+        foreach(CharacterControl c in players)
+        {
+            if(c != this)
+            {
+                c.playerName.text = PhotonNetwork.PlayerListOthers[0].NickName;
+            }
+        }
+
+        playerName.text = ClassesManager.instance.playerCharacter.playerName;
     }
     private void Update()
     {
@@ -61,6 +80,8 @@ public class CharacterControl : MonoBehaviour, IPunObservable
     private void FixedUpdate()
     {
         rb.velocity = new Vector2(desiredMovementAxis * Time.fixedDeltaTime * speed*2, rb.velocity.y);
+        isGrounded = Physics.Raycast(transform.GetChild(1).position, Vector3.down, 1f);
+        GetComponent<Animator>().SetBool("isGrounded", isGrounded);
     }
 
     //Esta funcion solo se llamara para mi personaje, de esta forma solo 1 de los dos respondera a mis controles
@@ -68,11 +89,14 @@ public class CharacterControl : MonoBehaviour, IPunObservable
     {
         //Miro si quiero moverme 
         desiredMovementAxis = Input.GetAxisRaw("Horizontal");
+        GetComponent<Animator>().SetBool("isWalking", desiredMovementAxis != 0);
+        
 
         //Aplico fuerza si quiero saltar no hemos comprobado si estamos en el suelo, tenemos salto infinito
-        if(Input.GetButtonDown("Jump"))
+        if(Input.GetButtonDown("Jump") && isGrounded)
         {
-            rb.AddForce(new Vector2(0f, jumpForce*3));
+            rb.AddForce(new Vector2(0f, jumpForce*40));
+            GetComponent<Animator>().SetTrigger("Jump");
             //Animacion de salto
         }
 
@@ -104,7 +128,6 @@ public class CharacterControl : MonoBehaviour, IPunObservable
         if (stream.IsWriting)
         {
             stream.SendNext(transform.position);
-            stream.SendNext(transform.localEulerAngles);
         }
         else if(stream.IsReading)
         {
@@ -123,6 +146,7 @@ public class CharacterControl : MonoBehaviour, IPunObservable
     [PunRPC]
     public void NetworkDamage()
     {
-        Destroy(this.gameObject);
+        GetComponent<Animator>().SetTrigger("Hurt");
+        //Destroy(this.gameObject);
     }
 }
