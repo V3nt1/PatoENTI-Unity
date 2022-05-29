@@ -7,8 +7,9 @@ public enum Class { Mage, Archer, Shooter };
 
 public struct Character
 {
-    public Character(Class c_Class, int iHealth, int iDamage, int iSpeed, int iJump, int iCadency)
+    public Character(Class c_Class, int iHealth, int iDamage, int iSpeed, int iJump, int iCadency, string name = "")
     {
+        playerName = name;
         m_Class = c_Class;
         health = iHealth;
         damage = iDamage;   
@@ -17,6 +18,7 @@ public struct Character
         cadency = iCadency;
     }
 
+    public string playerName;
     public Class m_Class;
     public int health;
     public int damage;
@@ -27,23 +29,40 @@ public struct Character
 
 public class ClassesManager : MonoBehaviour
 {
-    public static List<Character> classes;
+    public List<Character> classes = new List<Character>();
+
+    public Character playerCharacter;
+
+    public Class enemyClass;
+
+    public static ClassesManager instance;
+
 
     private void Awake()
     {
-        classes = new List<Character>();
+        if (instance != null && instance != this)
+        {
+            Destroy(instance);
+        }
+        else
+        {
+            //Defino esta instancia como network manager y la asigno como dont destroy para evitar que se borre al cambiar de escena
+            instance = this;
+            DontDestroyOnLoad(this);
+        }
     }
 
     private void Start()
     {
         Network_Manager._NETWORK_MANAGER.LoadAllClasses();
     }
-    void Update()
+
+    public void SetPlayerCharacter(string name, int classType)
     {
-
+        playerCharacter = classes[classType];
+        playerCharacter.playerName = name;
     }
-
-    public static List<Character> GetAllClasses()
+    public List<Character> GetAllClasses()
     {
         return classes;
     }

@@ -20,7 +20,7 @@ public class Register_Screen : MonoBehaviour
 
     public void LoadAllOptions()
     {
-        foreach (Character playerClass in ClassesManager.GetAllClasses())
+        foreach (Character playerClass in ClassesManager.instance.GetAllClasses())
         {
             stringClasses.Add(playerClass.m_Class.ToString());
         }

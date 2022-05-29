@@ -4,6 +4,7 @@ using UnityEngine;
 using System.Net.Sockets;
 using System.IO;
 using System;
+using UnityEngine.SceneManagement;
 
 public class Network_Manager : MonoBehaviour
 {
@@ -20,6 +21,7 @@ public class Network_Manager : MonoBehaviour
     const int port = 6543;
 
     [SerializeField] Register_Screen register;
+    [SerializeField] CanvasManager canvasManager;
     private void Awake()
     {
         //Si ya existe una instancia del manager y es diferente de la instancia creada en este script destruyo por duplicado
@@ -106,6 +108,28 @@ public class Network_Manager : MonoBehaviour
 
     }
 
+    public void AskForOtherClass(string playerName)
+    {
+        try
+        {
+            socket = new TcpClient(host, port);
+            stream = socket.GetStream();
+
+            connected = true;
+
+            writer = new StreamWriter(stream);
+            reader = new StreamReader(stream);
+
+            writer.WriteLine($"OtherClass/{playerName}");
+
+            writer.Flush();
+        }
+        catch (Exception e)
+        {
+            Debug.Log(e.ToString());
+        }
+    }
+
     private void ManageData(string data)
     {
         string[] parameters = data.Split('/');
@@ -121,7 +145,8 @@ public class Network_Manager : MonoBehaviour
             Debug.Log(parameters[1]);
             if (parameters[1].Equals("True"))
             {
-                //Aceptar el login
+                ClassesManager.instance.SetPlayerCharacter(parameters[2], (int)(Class)System.Enum.Parse(typeof(Class), parameters[3]));
+                SceneManager.LoadScene("LobbyScene");
             }
             else
             {
@@ -133,11 +158,11 @@ public class Network_Manager : MonoBehaviour
             //En este caso, si devuelve True es que el usuario ya existe por lo que no se puede registrar.
             if (parameters[1].Equals("True"))
             {
-                Debug.LogError("Te has registrado mal, tonto");
+               //Decir que ya existe una cuenta con ese nombre de user
             }
             else
             {
-                Debug.Log("Te has registrado bien, tonto");
+                canvasManager.LoadLoginScreen();
             }
         }
         else if (parameters[0].Equals("Classes")){
@@ -169,7 +194,7 @@ public class Network_Manager : MonoBehaviour
                     }
                 }
 
-                ClassesManager.classes = classes;
+                ClassesManager.instance.classes = classes;
                 register.LoadAllOptions();
             }
             catch (Exception e)
@@ -177,6 +202,10 @@ public class Network_Manager : MonoBehaviour
                 Debug.Log(e.ToString());
             }
         }
+        //else if (parameters[0].Equals("OtherClass"))
+        //{
+        //    ClassesManager.instance.enemyClass = (Class)System.Enum.Parse(typeof(Class), parameters[1]);
+        //}
     }
 
     public void LoadAllClasses()
